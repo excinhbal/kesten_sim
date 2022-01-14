@@ -52,9 +52,7 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 
 int main()
 {
-    // TODO fixed seed
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
+    std::mt19937 gen{42};
 
     std::vector<std::vector<double>> w(N_e, std::vector<double>(N_e-1, 0.0));
     std::vector<double> xi_kesten(w.size());
