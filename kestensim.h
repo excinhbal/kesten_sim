@@ -35,7 +35,7 @@ struct Parameters
     double syn_kesten_var_epsilon_1 = 0.0011/second;
     double syn_kesten_var_eta = 0.000028/second;
 
-    int seed = 193945;
+    long unsigned int seed = 193945;
 };
 
 bool do_norm(int step, int norm_steps) {
