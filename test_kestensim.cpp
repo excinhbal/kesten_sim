@@ -11,7 +11,8 @@ std::string readfile(std::string path) {
 }
 
 TEST_CASE("End-to-end seed 193945") {
-    kestensim();
+    Parameters p;
+    kestensim(p);
 
     auto weights = readfile("./weights.txt");
     auto weights_actual = readfile("../testdata/weights.txt");

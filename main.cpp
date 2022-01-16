@@ -2,7 +2,8 @@
 
 int main()
 {
-    kestensim();
+    Parameters p;
+    kestensim(p);
 
     return 0;
 }

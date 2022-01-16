@@ -9,18 +9,32 @@
 #include <forward_list>
 #include <chrono>
 
+#include "json.hpp"
+
 const static double second = 1000.0; // in ms
-const static int N_e = 1600;
-const static double eta_norm = 1.0;
-const static double eta_targ = 12.5;
-const static double w_min = 0.0363;
-const static double w_max = 0.3244;
-const static double p_conn_fraction = 0.08;
-const static double p_inact = 0.1;
-const static double T = 20*second;
-const static double dt = 100.0; //ms
-const static double dt_norm = 100.0; //ms
-const static double dt_strct = 1000.0; //ms
+
+struct Parameters
+{
+    int N_e = 1600;
+    double eta_norm = 1.0;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Parameters, eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct,
+                                   syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta)
+    double eta_targ = 12.5;
+    double w_min = 0.0363;
+    double w_max = 0.3244;
+    double p_conn_fraction = 0.08;
+    double p_inact = 0.1;
+    double T = 20 * second;
+    double dt = 100.0; //ms
+    double dt_norm = 100.0; //ms
+    double dt_strct = 1000.0; //ms
+
+    double syn_kesten_mu_epsilon_1 = -0.032/second;
+    double syn_kesten_mu_eta = 0.003/second;
+    double syn_kesten_var_epsilon_1 = 0.0011/second;
+    double syn_kesten_var_eta = 0.000028/second;
+};
 
 bool do_norm(int step, int norm_steps) {
     return step % norm_steps == 0;
@@ -32,10 +46,6 @@ bool do_strct(int step, int strct_steps) {
 
 bool syn_active(double w) {
     return w > 0;
-}
-
-double clamp(double w) {
-    return std::clamp(w, w_min, w_max);
 }
 
 enum class StructuralPlasticityEventType {Destroy = 0, Create = 1};
@@ -54,32 +64,27 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 }
 
 
-void kestensim() {
+void kestensim(const Parameters& p) {
     std::mt19937 gen{193945};
 
-    std::vector<std::vector<double>> w(N_e, std::vector<double>(N_e-1, 0.0));
+    std::vector<std::vector<double>> w(p.N_e, std::vector<double>(p.N_e-1, 0.0));
     std::vector<double> xi_kesten(w.size());
     std::forward_list<StructuralPlasticityEvent> structual_events;
 
-    std::normal_distribution<double> norm(0, sqrt(dt)); // Euler-Maruyama method
+    std::normal_distribution<double> norm(0, sqrt(p.dt)); // Euler-Maruyama method
 
     const int n_available = w.size()*w[0].size();
-    const int n_should_be_active = std::ceil(p_conn_fraction*n_available);
+    const int n_should_be_active = std::ceil(p.p_conn_fraction*n_available);
 
-    int steps = std::ceil(T/dt);
-    int norm_steps = std::ceil(dt_norm/dt);
-    int strct_steps = std::ceil(dt_strct/dt);
-
-    const double syn_kesten_mu_epsilon_1 = -0.032/second;
-    const double syn_kesten_mu_eta = 0.003/second;
-    const double syn_kesten_var_epsilon_1 = 0.0011/second ;
-    const double syn_kesten_var_eta = 0.000028/second;
+    int steps = std::ceil(p.T/p.dt);
+    int norm_steps = std::ceil(p.dt_norm/p.dt);
+    int strct_steps = std::ceil(p.dt_strct/p.dt);
 
     std::uniform_real_distribution<double> unif(0.0, 1.0);
     for (auto& neuron_w : w) {
         for (auto& weight: neuron_w) {
-            if (unif(gen) <= p_conn_fraction)
-                weight = w_min+0.01*w_min; // add a bit to not prune synapses in first pruning event
+            if (unif(gen) <= p.p_conn_fraction)
+                weight = p.w_min+0.01*p.w_min; // add a bit to not prune synapses in first pruning event
         }
     }
 
@@ -104,26 +109,26 @@ void kestensim() {
 //            std::cout << "p_insert " << p_insert << std::endl;
 //            std::cout << "=======" << std::endl;
 
-            for (int i = 0; i < N_e; ++i) {
-                for (int j = 0; j < N_e-1; ++j) {
+            for (int i = 0; i < p.N_e; ++i) {
+                for (int j = 0; j < p.N_e-1; ++j) {
                     auto& w_single = w[i][j];
                     if (syn_active(w_single)) { // prune?
-                        bool should_stay_active = w_single > w_min || (w_single <= w_min && (unif(gen) > p_inact));
+                        bool should_stay_active = w_single > p.w_min || (w_single <= p.w_min && (unif(gen) > p.p_inact));
                         if (!should_stay_active) {
                             w_single = 0.0;
                             structual_events.emplace_front(
                                     StructuralPlasticityEventType::Destroy,
-                                    ((double)step)/((double)steps) * T/second,
+                                    ((double)step)/((double)steps) * p.T/second,
                                     i, j
                             );
                         }
                     } else { // create?
                         bool should_become_active = unif(gen) <= p_insert;
                         if (should_become_active) {
-                            w_single = w_min;
+                            w_single = p.w_min;
                             structual_events.emplace_front(
                                     StructuralPlasticityEventType::Create,
-                                    ((double)step)/((double)steps) * T/second,
+                                    ((double)step)/((double)steps) * p.T/second,
                                     i, j
                             );
                         }
@@ -133,28 +138,28 @@ void kestensim() {
         }
 
         // kesten
-        for (int i = 0; i < N_e; i++) {
-            for (int j = 0; j < N_e-1; j++) {
+        for (int i = 0; i < p.N_e; i++) {
+            for (int j = 0; j < p.N_e-1; j++) {
                 if (syn_active(w[i][j])) {
                     // using Euler-Maruyama method
                     w[i][j] = w[i][j]
-                              + ((syn_kesten_mu_epsilon_1 * w[i][j] + syn_kesten_mu_eta)) * dt
-                              + sqrt(syn_kesten_var_epsilon_1 * pow(w[i][j], 2) + syn_kesten_var_eta) * norm(gen);
-                    w[i][j] = clamp(w[i][j]);
+                              + ((p.syn_kesten_mu_epsilon_1 * w[i][j] + p.syn_kesten_mu_eta)) * p.dt
+                              + sqrt(p.syn_kesten_var_epsilon_1 * pow(w[i][j], 2) + p.syn_kesten_var_eta) * norm(gen);
+                    w[i][j] = std::clamp(w[i][j], p.w_min, p.w_max);
                 }
             }
         }
 
         // normalization
         if (do_norm(step, norm_steps)) {
-            for (int i = 0; i < N_e; i++) {
+            for (int i = 0; i < p.N_e; i++) {
                 double w_sum = 0;
-                for (int j = 0; j < N_e-1; j++) {
+                for (int j = 0; j < p.N_e-1; j++) {
                     w_sum += w[i][j];
                 }
-                for (int j = 0; j < N_e-1; j++) {
+                for (int j = 0; j < p.N_e-1; j++) {
                     if (syn_active(w[i][j])) {
-                        w[i][j] = clamp(w[i][j] * (1 + eta_norm * (eta_targ / w_sum - 1)));
+                        w[i][j] = std::clamp(w[i][j] * (1 + p.eta_norm * (p.eta_targ / w_sum - 1)), p.w_min, p.w_max);
                     }
                 }
             }
