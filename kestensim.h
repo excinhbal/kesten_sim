@@ -19,7 +19,7 @@ struct Parameters
     double eta_norm = 1.0;
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(Parameters, eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct,
-                                   syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta)
+                                   syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta, seed)
     double eta_targ = 12.5;
     double w_min = 0.0363;
     double w_max = 0.3244;
@@ -34,6 +34,8 @@ struct Parameters
     double syn_kesten_mu_eta = 0.003/second;
     double syn_kesten_var_epsilon_1 = 0.0011/second;
     double syn_kesten_var_eta = 0.000028/second;
+
+    int seed = 193945;
 };
 
 bool do_norm(int step, int norm_steps) {
@@ -65,7 +67,7 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 
 
 void kestensim(const Parameters& p) {
-    std::mt19937 gen{193945};
+    std::mt19937 gen{p.seed};
 
     std::vector<std::vector<double>> w(p.N_e, std::vector<double>(p.N_e-1, 0.0));
     std::vector<double> xi_kesten(w.size());

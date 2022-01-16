@@ -11,5 +11,6 @@
   "syn_kesten_mu_epsilon_1": -0.000032,
   "syn_kesten_mu_eta": 0.000003,
   "syn_kesten_var_epsilon_1": 0.0000011,
-  "syn_kesten_var_eta": 0.000000028
+  "syn_kesten_var_eta": 0.000000028,
+  "seed": 193945
 }
