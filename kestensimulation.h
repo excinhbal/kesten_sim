@@ -9,6 +9,7 @@
 #include <fstream>
 #include <forward_list>
 #include <chrono>
+#include <optional>
 #include "json.hpp"
 
 const static double second = 1000.0; // in ms
@@ -51,7 +52,7 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 class KestenSimulation
 {
 public:
-    KestenSimulation(const Parameters& p);
+    explicit KestenSimulation(const Parameters& p, std::optional<int> n_ownNeurons = {});
 
     [[nodiscard]] bool hasNextStep() const;
     void doStep();
@@ -66,10 +67,11 @@ protected:
      * @param n_active Amount of active synapses in this simulation.
      * @return Amount of active synapses across all simulations.
      */
-    virtual int synchronizeActive(int n_active);
+    [[nodiscard]] virtual int synchronizeActive(int n_active);
 
 private:
     const Parameters p;
+    int n_ownNeurons;
 
     std::chrono::steady_clock::time_point t_begin;
     std::chrono::steady_clock::time_point t_print;

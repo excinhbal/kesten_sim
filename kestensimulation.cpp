@@ -24,15 +24,16 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 
 // TODO swap ij
 // currently we do j->i but I think (check!) brian does i->j
-KestenSimulation::KestenSimulation(const Parameters& p_)
+KestenSimulation::KestenSimulation(const Parameters& p_, std::optional<int> n_ownNeurons_)
         : p(p_)
+        , n_ownNeurons(n_ownNeurons_.has_value() ? n_ownNeurons_.value() : p.N_e)
         , t_begin()
         , t_print()
         , step(0)
         , steps(std::ceil(p.T/p.dt))
         , norm_steps(std::ceil(p.dt_norm/p.dt))
         , strct_steps(std::ceil(p.dt_strct/p.dt))
-        , w(p.N_e, std::vector<double>(p.N_e-1, 0.0))
+        , w(n_ownNeurons, std::vector<double>(p.N_e-1, 0.0))
         , gen(p.seed)
         , unif(0.0, 1.0)
         , xi_kesten(0, sqrt(p.dt))
@@ -80,7 +81,7 @@ void KestenSimulation::doStep()
 //            std::cout << "=======" << std::endl;
 
         // Brian2 uses i-> j which is not how our array is laid out
-        for (int j = 0; j < p.N_e; ++j) {
+        for (int j = 0; j < n_ownNeurons; ++j) {
             for (int i = 0; i < p.N_e - 1; ++i) {
                 auto& w_single = w[j][i];
                 if (syn_active(w_single)) { // prune?
@@ -123,7 +124,7 @@ void KestenSimulation::doStep()
 
     // normalization
     if (do_norm(step, norm_steps)) {
-        for (int j = 0; j < p.N_e; j++) {
+        for (int j = 0; j < n_ownNeurons; j++) {
             double w_sum = 0;
             for (int i = 0; i < p.N_e - 1; i++) {
                 w_sum += w[j][i];
