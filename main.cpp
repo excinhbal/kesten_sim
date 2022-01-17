@@ -1,5 +1,5 @@
-#include "kestensim.h"
 #include "json.hpp"
+#include "kestensimulation.h"
 
 int main(int argc, char** argv)
 {
@@ -14,7 +14,12 @@ int main(int argc, char** argv)
 
     jsonfile >> j;
     Parameters p = j.get<Parameters>();
-    kestensim(p);
+
+    KestenSimulation sim(p);
+    while (sim.hasNextStep()) {
+        sim.doStep();
+    }
+    sim.saveResults();
 
     return 0;
 }

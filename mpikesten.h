@@ -1,5 +1,6 @@
 #include <mpi.h>
 #include "kestensim.h"
+#include "kestensimulation.h"
 
 struct MpiInfo
 {
