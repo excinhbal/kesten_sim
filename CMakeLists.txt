@@ -3,6 +3,7 @@ project(kesten_sim)
 
 set(CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -ffast-math")
+set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -march=native -ffast-math")
 find_package(MPI REQUIRED COMPONENTS CXX)
 add_definitions(-DOMPI_SKIP_MPICXX)
 
