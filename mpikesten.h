@@ -1,6 +1,10 @@
+#ifndef MPI_KESTEN_H
+#define MPI_KESTEN_H
+
 #include <mpi.h>
-#include "kestensim.h"
 #include "kestensimulation.h"
+
+MPI_Datatype register_structural_events_type();
 
 struct MpiInfo
 {
@@ -8,28 +12,26 @@ struct MpiInfo
     int rank = 0;
     int i_start = -1;
     int i_end = -1;
+    MPI_Datatype MPI_Type_StructuralPlasticityEvent = MPI_DATATYPE_NULL;
 };
 
-std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info)
-{
-    ostream << "MpiInfo { " << info.rank << " of " << info.world_size
-            << " with range [" << info.i_start << ", " << info.i_end << ")"
-            << " }";
-    return ostream;
-}
+class MpiKestenSim : public KestenSimulation {
+public:
+    MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo);
 
-void mpikesten(const Parameters& p)
-{
-    MPI_Init(nullptr, nullptr);
+    void mpiSendAndCollectWeights();
+    void mpiSendAndCollectStrctEvents();
+    void mpiSaveResults();
 
-    MpiInfo mpiInfo;
-    MPI_Comm_size(MPI_COMM_WORLD, &mpiInfo.world_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &mpiInfo.rank);
+protected:
+    int synchronizeActive(int n_active) override;
 
-    mpiInfo.i_start = (mpiInfo.rank) * p.N_e / mpiInfo.world_size;
-    mpiInfo.i_end = (mpiInfo.rank + 1) * p.N_e / mpiInfo.world_size;
+private:
+    const MpiInfo mpiInfo;
+    std::vector<double> w_all;
+    std::vector<StructuralPlasticityEvent> structual_events_all;
+};
 
-    std::cout << mpiInfo << std::endl;
+std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info);
 
-    MPI_Finalize();
-}
+#endif // MPI_KESTEN_H
