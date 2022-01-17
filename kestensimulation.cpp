@@ -28,7 +28,7 @@ KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
         , w(n_ownNeurons, std::vector<double>(p.N_e-1, 0.0))
         , gen(p.seed + nP.seedOffset)
         , unif(0.0, 1.0)
-        , xi_kesten(0, sqrt(p.dt))
+        , norm(0, 1)
         , n_available(w.size()*w[0].size())
         , n_should_be_active(std::ceil(p.p_conn_fraction*n_available))
 {
@@ -107,11 +107,26 @@ void KestenSimulation::doStep()
     for (auto& neuron_w : w) {
         for (auto& w_: neuron_w) {
             if (syn_active(w_)) {
-                // using Euler-Maruyama method
-                w_ = w_
-                     + ((p.syn_kesten_mu_epsilon_1 * w_ + p.syn_kesten_mu_eta)) * p.dt
-                     + sqrt(p.syn_kesten_var_epsilon_1 * pow(w_, 2) + p.syn_kesten_var_eta) * xi_kesten(gen);
-                w_ = std::clamp(w_, p.w_min, p.w_max);
+                // using Stochastic Heun method, scheme from Brian2 (see brian2/stateupdaters/explicit.py)
+                // x - the variable
+                // g(x,t) - part of the equation that is stochastic
+                // f(x,t) - non-stochastic part
+                // dW ~ Norm(0, sqrt(dt))
+                //
+                // x_support = x + g(x,t) * dW
+                // g_support = g(x_support,t+dt)
+                // x_new = x + dt*f(x,t) + .5*dW*(g(x,t)+g_support)
+
+                double xi_kesten = sqrt(p.dt)*norm(gen);
+                auto g = [this](const double w_) {
+                    return sqrt(p.syn_kesten_var_eta + p.syn_kesten_var_epsilon_1 * pow(w_, 2));
+                };
+                auto f = [this](const double w_) {
+                    return p.syn_kesten_mu_eta + p.syn_kesten_mu_epsilon_1 * w_;
+                };
+                double x_support = w_ + norm(gen)*g(w_);
+                double g_support = g(x_support);
+                w_ = w_ + p.dt*f(w_) + 0.5*xi_kesten*(g(w_)+g_support);
             }
         }
     }

@@ -110,7 +110,7 @@ protected:
 
     std::mt19937 gen;
     std::uniform_real_distribution<double> unif;
-    std::normal_distribution<double> xi_kesten; // Euler-Maruyama method
+    std::normal_distribution<double> norm;
 
     const int n_available;
     const int n_should_be_active;
