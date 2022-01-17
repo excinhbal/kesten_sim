@@ -71,6 +71,7 @@ void KestenSimulation::doStep()
                 }
             }
         }
+        n_active = synchronizeActive(n_active);
         double p_insert = std::clamp((double)(n_should_be_active-n_active)/(double)(n_available-n_active),
                                      0.0, 1.0);
 //            std::cout << "n_active " << n_active << std::endl;
@@ -169,3 +170,9 @@ void KestenSimulation::saveResults()
     turnover_file << structual_events;
     turnover_file.close();
 }
+
+int KestenSimulation::synchronizeActive(int n_active)
+{
+    return n_active;
+}
+

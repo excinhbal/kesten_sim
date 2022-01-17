@@ -53,10 +53,20 @@ class KestenSimulation
 public:
     KestenSimulation(const Parameters& p);
 
-    bool hasNextStep() const;
+    [[nodiscard]] bool hasNextStep() const;
     void doStep();
 
     void saveResults();
+
+protected:
+    /**
+     * If this simulation only simulates for a subset of neurons, use this function to synchronize
+     * the count of active synapses across simulation instances.
+     *
+     * @param n_active Amount of active synapses in this simulation.
+     * @return Amount of active synapses across all simulations.
+     */
+    virtual int synchronizeActive(int n_active);
 
 private:
     const Parameters p;
