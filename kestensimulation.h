@@ -39,6 +39,12 @@ struct Parameters
     long unsigned int seed = 193945;
 };
 
+struct NodeParameters {
+    std::optional<int> N_e = {};
+    int neuronOffset = 0;
+    int seedOffset = 0;
+};
+
 enum class StructuralPlasticityEventType {Destroy = 0, Create = 1};
 struct StructuralPlasticityEvent {  // 1 create 0 destroy | t | i | j
     StructuralPlasticityEventType type;
@@ -52,7 +58,7 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 class KestenSimulation
 {
 public:
-    explicit KestenSimulation(const Parameters& p, std::optional<int> n_ownNeurons = {});
+    explicit KestenSimulation(const Parameters& p, NodeParameters nodeParameters = {});
 
     [[nodiscard]] bool hasNextStep() const;
     void doStep();
@@ -69,8 +75,9 @@ protected:
      */
     [[nodiscard]] virtual int synchronizeActive(int n_active);
 
-private:
+protected:
     const Parameters p;
+    const NodeParameters nP;
     int n_ownNeurons;
 
     std::chrono::steady_clock::time_point t_begin;

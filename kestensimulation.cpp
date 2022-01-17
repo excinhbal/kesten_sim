@@ -24,9 +24,10 @@ std::ostream& operator<<(std::ostream& stream, const std::forward_list<Structura
 
 // TODO swap ij
 // currently we do j->i but I think (check!) brian does i->j
-KestenSimulation::KestenSimulation(const Parameters& p_, std::optional<int> n_ownNeurons_)
+KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
         : p(p_)
-        , n_ownNeurons(n_ownNeurons_.has_value() ? n_ownNeurons_.value() : p.N_e)
+        , nP(nP_)
+        , n_ownNeurons(nP.N_e.has_value() ? nP.N_e.value() : p.N_e)
         , t_begin()
         , t_print()
         , step(0)
@@ -34,7 +35,7 @@ KestenSimulation::KestenSimulation(const Parameters& p_, std::optional<int> n_ow
         , norm_steps(std::ceil(p.dt_norm/p.dt))
         , strct_steps(std::ceil(p.dt_strct/p.dt))
         , w(n_ownNeurons, std::vector<double>(p.N_e-1, 0.0))
-        , gen(p.seed)
+        , gen(p.seed + nP.seedOffset)
         , unif(0.0, 1.0)
         , xi_kesten(0, sqrt(p.dt))
         , n_available(w.size()*w[0].size())
@@ -91,7 +92,7 @@ void KestenSimulation::doStep()
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Destroy,
                                 ((double)step)/((double)steps) * p.T/second,
-                                i, j
+                                nP.neuronOffset+i, j
                         );
                     }
                 } else { // create?
@@ -101,7 +102,7 @@ void KestenSimulation::doStep()
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Create,
                                 ((double)step)/((double)steps) * p.T/second,
-                                i, j
+                                nP.neuronOffset+i, j
                         );
                     }
                 }
