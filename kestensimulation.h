@@ -69,6 +69,14 @@ private:
     const int norm_steps;
     const int strct_steps;
 
+    /**
+     * List of postsynaptic neurons. Each postsynaptic neuron is a list of incoming synapses.
+     * Since Brian2 uses i->j we need to iterate over this array as this:
+     * ```
+     *  for (j = 0...Ne)  // postsynaptic neurons j
+     *      for (i = 0...Ne-1) // presynaptic neurons i
+     * ```
+     */
     std::vector<std::vector<double>> w;
     std::forward_list<StructuralPlasticityEvent> structual_events;
 

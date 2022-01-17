@@ -78,9 +78,10 @@ void KestenSimulation::doStep()
 //            std::cout << "p_insert " << p_insert << std::endl;
 //            std::cout << "=======" << std::endl;
 
-        for (int i = 0; i < p.N_e; ++i) {
-            for (int j = 0; j < p.N_e-1; ++j) {
-                auto& w_single = w[i][j];
+        // Brian2 uses i-> j which is not how our array is laid out
+        for (int j = 0; j < p.N_e; ++j) {
+            for (int i = 0; i < p.N_e - 1; ++i) {
+                auto& w_single = w[j][i];
                 if (syn_active(w_single)) { // prune?
                     bool should_stay_active = w_single > p.w_min || (w_single <= p.w_min && (unif(gen) > p.p_inact));
                     if (!should_stay_active) {
@@ -107,28 +108,28 @@ void KestenSimulation::doStep()
     }
 
     // kesten
-    for (int i = 0; i < p.N_e; i++) {
-        for (int j = 0; j < p.N_e-1; j++) {
-            if (syn_active(w[i][j])) {
+    for (auto& neuron_w : w) {
+        for (auto& w_: neuron_w) {
+            if (syn_active(w_)) {
                 // using Euler-Maruyama method
-                w[i][j] = w[i][j]
-                          + ((p.syn_kesten_mu_epsilon_1 * w[i][j] + p.syn_kesten_mu_eta)) * p.dt
-                          + sqrt(p.syn_kesten_var_epsilon_1 * pow(w[i][j], 2) + p.syn_kesten_var_eta) * xi_kesten(gen);
-                w[i][j] = std::clamp(w[i][j], p.w_min, p.w_max);
+                w_ = w_
+                     + ((p.syn_kesten_mu_epsilon_1 * w_ + p.syn_kesten_mu_eta)) * p.dt
+                     + sqrt(p.syn_kesten_var_epsilon_1 * pow(w_, 2) + p.syn_kesten_var_eta) * xi_kesten(gen);
+                w_ = std::clamp(w_, p.w_min, p.w_max);
             }
         }
     }
 
     // normalization
     if (do_norm(step, norm_steps)) {
-        for (int i = 0; i < p.N_e; i++) {
+        for (int j = 0; j < p.N_e; j++) {
             double w_sum = 0;
-            for (int j = 0; j < p.N_e-1; j++) {
-                w_sum += w[i][j];
+            for (int i = 0; i < p.N_e - 1; i++) {
+                w_sum += w[j][i];
             }
-            for (int j = 0; j < p.N_e-1; j++) {
-                if (syn_active(w[i][j])) {
-                    w[i][j] = std::clamp(w[i][j] * (1 + p.eta_norm * (p.eta_targ / w_sum - 1)), p.w_min, p.w_max);
+            for (int i = 0; i < p.N_e - 1; i++) {
+                if (syn_active(w[j][i])) {
+                    w[j][i] = std::clamp(w[j][i] * (1 + p.eta_norm * (p.eta_targ / w_sum - 1)), p.w_min, p.w_max);
                 }
             }
         }
