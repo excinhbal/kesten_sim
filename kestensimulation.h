@@ -53,7 +53,16 @@ struct StructuralPlasticityEvent {  // 1 create 0 destroy | t | i | j
     int j;
 };
 
-std::ostream& operator<<(std::ostream& stream, const std::forward_list<StructuralPlasticityEvent>& events);
+template<typename Container, typename T = typename Container::value_type>
+typename std::enable_if<std::is_same<StructuralPlasticityEvent, T>::value, std::ostream&>::type
+         operator<<(std::ostream& stream, const Container& events)
+{
+    for (const auto& event : events) {
+        stream << (int) event.type << " " << event.t << " " << event.i << " " << event.j << "\n";
+    }
+    return stream;
+}
+
 
 class KestenSimulation
 {

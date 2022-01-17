@@ -14,16 +14,7 @@ namespace {
     }
 }
 
-std::ostream& operator<<(std::ostream& stream, const std::forward_list<StructuralPlasticityEvent>& events)
-{
-    for (const auto& event : events) {
-        stream << (int) event.type << " " << event.t << " " << event.i << " " << event.j << "\n";
-    }
-    return stream;
-}
 
-// TODO swap ij
-// currently we do j->i but I think (check!) brian does i->j
 KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
         : p(p_)
         , nP(nP_)
@@ -60,8 +51,10 @@ void KestenSimulation::doStep()
     if (!hasNextStep())
         return;
 
-    t_begin = std::chrono::steady_clock::now();
-    t_print = std::chrono::steady_clock::now();
+    if (step == 0) {
+        t_begin = std::chrono::steady_clock::now();
+        t_print = std::chrono::steady_clock::now();
+    }
 
     // structural plasticity
     if (do_strct(step, strct_steps)) { // when="start"
@@ -81,7 +74,7 @@ void KestenSimulation::doStep()
 //            std::cout << "p_insert " << p_insert << std::endl;
 //            std::cout << "=======" << std::endl;
 
-        // Brian2 uses i-> j which is not how our array is laid out
+        // Brian2 uses i->j which is not how our array is laid out
         for (int j = 0; j < n_ownNeurons; ++j) {
             for (int i = 0; i < p.N_e - 1; ++i) {
                 auto& w_single = w[j][i];
@@ -92,7 +85,7 @@ void KestenSimulation::doStep()
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Destroy,
                                 ((double)step)/((double)steps) * p.T/second,
-                                nP.neuronOffset+i, j
+                                i, nP.neuronOffset+j
                         );
                     }
                 } else { // create?
@@ -102,7 +95,7 @@ void KestenSimulation::doStep()
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Create,
                                 ((double)step)/((double)steps) * p.T/second,
-                                nP.neuronOffset+i, j
+                                i, nP.neuronOffset+j
                         );
                     }
                 }
