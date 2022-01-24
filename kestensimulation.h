@@ -51,6 +51,15 @@ struct StructuralPlasticityEvent {  // 1 create 0 destroy | t | i | j
     double t; // in seconds
     int i;
     int j;
+
+    StructuralPlasticityEvent() { }
+
+    StructuralPlasticityEvent(StructuralPlasticityEventType type_, double t_, int i_, int j_)
+        : type(type_)
+        , t(t_)
+        , i(i_)
+        , j(j_)
+    { }
 };
 
 template<typename Container, typename T = typename Container::value_type>
