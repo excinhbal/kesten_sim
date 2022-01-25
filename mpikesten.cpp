@@ -35,7 +35,7 @@ int MpiKestenSim::synchronizeActive(int n_active)
 {
     int n_active_all;
     MPI_Allreduce(&n_active, &n_active_all, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    std::cout << mpiInfo.rank << " has active " << n_active << " and got all active " << n_active_all << std::endl;
+//    std::cout << mpiInfo.rank << " has active " << n_active << " and got all active " << n_active_all << std::endl;
     return n_active_all;
 }
 

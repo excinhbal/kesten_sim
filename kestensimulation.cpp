@@ -29,14 +29,14 @@ KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
         , gen(p.seed + nP.seedOffset)
         , unif(0.0, 1.0)
         , norm(0, 1)
-        , n_available(w.size()*w[0].size())
+        , n_available(p.N_e*w[0].size())
         , n_should_be_active(std::ceil(p.p_conn_fraction*n_available))
 {
     // initialize weights
     for (auto& neuron_w : w) {
         for (auto& weight: neuron_w) {
             if (unif(gen) <= p.p_conn_fraction)
-                weight = p.w_min+0.01*p.w_min; // add a bit to not prune synapses in first pruning event
+                weight = p.w_min*1.01; // add a bit to not prune synapses in first pruning event
         }
     }
 }
@@ -75,11 +75,12 @@ void KestenSimulation::doStep()
 //            std::cout << "=======" << std::endl;
 
         // Brian2 uses i->j which is not how our array is laid out
+        const double w_prune = p.w_min;
         for (int j = 0; j < n_ownNeurons; ++j) {
             for (int i = 0; i < p.N_e - 1; ++i) {
                 auto& w_single = w[j][i];
                 if (syn_active(w_single)) { // prune?
-                    bool should_stay_active = w_single > p.w_min || (w_single <= p.w_min && (unif(gen) > p.p_inact));
+                    bool should_stay_active = w_single > w_prune || (w_single <= w_prune && (unif(gen) > p.p_inact));
                     if (!should_stay_active) {
                         w_single = 0.0;
                         structual_events.emplace_front(
@@ -127,7 +128,7 @@ void KestenSimulation::doStep()
                 double x_support = w_ + norm(gen)*g(w_);
                 double g_support = g(x_support);
                 w_ = w_ + p.dt*f(w_) + 0.5*xi_kesten*(g(w_)+g_support);
-                w_ = std::clamp(w_, p.w_min, p.w_max);
+                //w_ = std::clamp(w_, p.w_min, p.w_max);
             }
         }
     }
