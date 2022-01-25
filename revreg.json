@@ -1,5 +1,5 @@
 {
-  "eta_targ": 12.5,
+  "eta_targ": 12.3,
   "w_min": 0.0363,
   "w_max": 0.3244,
   "p_conn_fraction": 0.08,
@@ -8,9 +8,9 @@
   "dt": 100.0,
   "dt_norm": 100.0,
   "dt_strct": 1000.0,
-  "syn_kesten_mu_epsilon_1": -0.0001,
-  "syn_kesten_mu_eta": 0.000002,
-  "syn_kesten_var_epsilon_1": 0.0000008,
-  "syn_kesten_var_eta": 0.000000014,
+  "syn_kesten_mu_epsilon_1": -0.000032,
+  "syn_kesten_mu_eta": 0.000003,
+  "syn_kesten_var_epsilon_1": 0.0000006,
+  "syn_kesten_var_eta": 0.000000028,
   "seed": 193945
 }
