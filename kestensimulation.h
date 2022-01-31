@@ -19,8 +19,9 @@ struct Parameters
     int N_e = 1600;
     double eta_norm = 1.0;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Parameters, eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct,
-                                   syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta, seed)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Parameters,
+        eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct,
+        syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta, seed)
     double eta_targ = 12.5;
     double w_min = 0.0363;
     double w_max = 0.3244;
@@ -30,6 +31,8 @@ struct Parameters
     double dt = 100.0; //ms
     double dt_norm = 100.0; //ms
     double dt_strct = 1000.0; //ms
+
+    bool do_norm = true;
 
     double syn_kesten_mu_epsilon_1 = -0.032/second;
     double syn_kesten_mu_eta = 0.003/second;

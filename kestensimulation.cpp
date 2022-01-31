@@ -134,7 +134,7 @@ void KestenSimulation::doStep()
     }
 
     // normalization
-    if (do_norm(step, norm_steps)) {
+    if (p.do_norm && do_norm(step, norm_steps)) {
         for (int j = 0; j < n_ownNeurons; j++) {
             double w_sum = 0;
             for (int i = 0; i < p.N_e - 1; i++) {
