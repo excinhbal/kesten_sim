@@ -68,6 +68,7 @@ void MpiKestenSim::mpiSendAndCollectStrctEvents()
     auto eventBefore = [](const StructuralPlasticityEvent& ev1, const StructuralPlasticityEvent& ev2) { return ev1.t < ev2.t; };
     if (mpiInfo.rank == 0) { // root => receive
         std::vector<StructuralPlasticityEvent> own_source(structual_events.cbegin(), structual_events.cend());
+        structual_events.clear();
         std::vector<StructuralPlasticityEvent> events_target{0};
         for (int i = 1; i < mpiInfo.world_size; ++i) {
             MPI_Status status;

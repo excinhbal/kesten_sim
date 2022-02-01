@@ -18,15 +18,17 @@ int main(int argc, char** argv) {
 
     std::cout << mpiInfo << std::endl;
 
-    MpiKestenSim sim(p, mpiInfo);
-    while (sim.hasNextStep()) {
-        sim.doStep();
-    }
-    sim.mpiSendAndCollectWeights();
-    sim.mpiSendAndCollectStrctEvents();
-    if (mpiInfo.rank == 0) {
-        sim.mpiSaveResults();
-    }
+    {
+        MpiKestenSim sim(p, mpiInfo);
+        while (sim.hasNextStep()) {
+            sim.doStep();
+        }
+        sim.mpiSendAndCollectWeights();
+        sim.mpiSendAndCollectStrctEvents();
+        if (mpiInfo.rank == 0) {
+            sim.mpiSaveResults();
+        }
+    } // delete MpiKestenSim on non-root nodes the moment they are done
 
     MPI_Finalize();
 

@@ -49,16 +49,16 @@ struct NodeParameters {
     int seedOffset = 0;
 };
 
-enum class StructuralPlasticityEventType {Destroy = 0, Create = 1};
+enum class StructuralPlasticityEventType : char {Destroy = 0, Create = 1};
 struct StructuralPlasticityEvent {  // 1 create 0 destroy | t | i | j
     StructuralPlasticityEventType type;
     double t; // in seconds
-    int i;
-    int j;
+    std::uint16_t i;
+    std::uint16_t j;
 
     StructuralPlasticityEvent() { }
 
-    StructuralPlasticityEvent(StructuralPlasticityEventType type_, double t_, int i_, int j_)
+    StructuralPlasticityEvent(StructuralPlasticityEventType type_, double t_, std::uint16_t i_, std::uint16_t j_)
         : type(type_)
         , t(t_)
         , i(i_)
