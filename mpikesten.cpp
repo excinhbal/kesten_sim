@@ -85,6 +85,8 @@ void MpiKestenSim::mpiSendAndCollectStrctEvents()
     } else {
         std::vector<StructuralPlasticityEvent> own_data(structual_events.cbegin(), structual_events.cend());
         MPI_Send(own_data.data(), own_data.size(), mpiInfo.MPI_Type_StructuralPlasticityEvent, 0, 42, MPI_COMM_WORLD);
+        structual_events.clear();
+        own_data.resize(0);
     }
 }
 
