@@ -128,7 +128,8 @@ void KestenSimulation::doStep()
                 double x_support = w_ + norm(gen)*g(w_);
                 double g_support = g(x_support);
                 w_ = w_ + p.dt*f(w_) + 0.5*xi_kesten*(g(w_)+g_support);
-                //w_ = std::clamp(w_, p.w_min, p.w_max);
+                if (p.do_clamp_after_kesten)
+                    w_ = std::clamp(w_, p.w_min, p.w_max);
             }
         }
     }
