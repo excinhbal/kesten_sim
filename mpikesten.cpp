@@ -41,25 +41,44 @@ int MpiKestenSim::synchronizeActive(int n_active)
 
 void MpiKestenSim::mpiSendAndCollectWeights()
 {
-    // TODO make w storage fully continuous or investigate GATHERV
-    std::vector<double> own_w(n_ownNeurons*(p.N_e - 1), 0.0);
+    // TODO make w storage fully continuous
+    auto size_acc = [](const int& acc, const auto& neuron_w) { return acc + neuron_w.size(); };
+    int n_active = std::accumulate(w.cbegin(), w.cend(), 0, size_acc);
+    std::vector<double> own_w(n_active, 0.0);
     auto own_w_inserter = own_w.begin();
-    int count = 0;
-    for (const auto& neuron_w : w) {
-        for (const auto w_ : neuron_w) {
+    for (const auto& neuron_w: w) {
+        for (const auto w_: neuron_w) {
             *own_w_inserter = w_;
             own_w_inserter++;
-            count++;
         }
     }
-    if (mpiInfo.rank == 0) { // root, we receive
-        w_all.resize(p.N_e*(p.N_e-1), 0.0);
-        std::cout << mpiInfo.rank << " receiving " << w_all.size() << std::endl;
+
+    std::vector<int> counts(0);
+    if (mpiInfo.rank == 0) {
+        counts.resize(mpiInfo.world_size);
+        std::cout << "mpiInfo.world_size" << " " << mpiInfo.world_size << std::endl;
     }
-    std::cout << mpiInfo.rank << " sending " << own_w.size() << " from " << count << std::endl;
-    MPI_Gather(own_w.data(), own_w.size(), MPI_DOUBLE,
-               w_all.data(), own_w.size(), MPI_DOUBLE,
+    std::cout << "sending " << n_active << std::endl;
+    MPI_Gather(&n_active, 1, MPI_INT,
+               counts.data(), 1, MPI_INT,
                0, MPI_COMM_WORLD);
+
+    if (mpiInfo.rank == 0) {
+        for (const auto& c: counts) std::cout << c << " ";
+        std::cout << std::endl;
+    }
+
+    int n_active_all = std::accumulate(counts.cbegin(), counts.cend(), 0);
+    if (mpiInfo.rank == 0) { // root, we receive
+        w_all.resize(n_active_all, 0.0);
+        std::cout << "MPI(" << mpiInfo.rank << ")" << " receiving " << w_all.size() << std::endl;
+    }
+    std::vector<int> offsets(counts.size());
+    std::partial_sum(counts.cbegin(), counts.cend(), offsets.begin());
+    std::cout << "MPI(" << mpiInfo.rank << ")" << " sending " << own_w.size() << std::endl;
+    MPI_Gatherv(own_w.data(), own_w.size(), MPI_DOUBLE,
+                w_all.data(), offsets.data(), counts.data(), MPI_DOUBLE,
+                0, MPI_COMM_WORLD);
 }
 
 void MpiKestenSim::mpiSendAndCollectStrctEvents()
@@ -88,6 +107,7 @@ void MpiKestenSim::mpiSendAndCollectStrctEvents()
         MPI_Send(own_data.data(), own_data.size(), mpiInfo.MPI_Type_StructuralPlasticityEvent, 0, 42, MPI_COMM_WORLD);
         structual_events.clear();
         own_data.resize(0);
+        own_data.shrink_to_fit();
     }
 }
 
@@ -100,8 +120,7 @@ void MpiKestenSim::mpiSaveResults()
     std::cout << "storing results..." << std::endl;
     std::ofstream output_file("./weights.txt");
     for (const auto& weight : w_all) {
-        if (weight > 0)
-            output_file << weight << "\n";
+        output_file << weight << "\n";
     }
     output_file.close();
 

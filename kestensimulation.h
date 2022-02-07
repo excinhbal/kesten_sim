@@ -101,6 +101,7 @@ protected:
     const Parameters p;
     const NodeParameters nP;
     int n_ownNeurons;
+    int n_potentiallyIncoming;
 
     std::chrono::steady_clock::time_point t_begin;
     std::chrono::steady_clock::time_point t_print;
@@ -119,6 +120,7 @@ protected:
      * ```
      */
     std::vector<std::vector<double>> w;
+    std::vector<std::vector<unsigned short>> is;
     std::forward_list<StructuralPlasticityEvent> structual_events;
 
     std::mt19937 gen;
