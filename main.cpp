@@ -5,7 +5,7 @@ int main(int argc, char** argv)
 {
     Parameters p = params_from_arguments(argc, argv);
 
-    KestenSimulation sim(p);
+    KestenSimulation<Parameters, KestenStep> sim(p);
     while (sim.hasNextStep()) {
         sim.doStep();
     }

@@ -12,7 +12,7 @@ std::string readfile(std::string path) {
 
 TEST_CASE("End-to-end seed 193945") {
     Parameters p;
-    KestenSimulation sim(p);
+    KestenSimulation<Parameters, KestenStep> sim(p);
     while (sim.hasNextStep()) {
         sim.doStep();
     }

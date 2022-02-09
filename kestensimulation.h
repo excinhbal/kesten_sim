@@ -76,11 +76,22 @@ typename std::enable_if<std::is_same<StructuralPlasticityEvent, T>::value, std::
     return stream;
 }
 
+class KestenStep
+{
+public:
+    KestenStep(const Parameters& p);
+    void step(std::mt19937& gen, std::vector<std::vector<double>>& w_);
+private:
+    const Parameters p;
+    std::normal_distribution<double> norm;
+};
 
+
+template<typename P, typename L>
 class KestenSimulation
 {
 public:
-    explicit KestenSimulation(const Parameters& p, NodeParameters nodeParameters = {});
+    explicit KestenSimulation(const P& p, NodeParameters nodeParameters = {});
 
     [[nodiscard]] bool hasNextStep() const;
     void doStep();
@@ -125,10 +136,11 @@ protected:
 
     std::mt19937 gen;
     std::uniform_real_distribution<double> unif;
-    std::normal_distribution<double> norm;
 
     const int n_available;
     const int n_should_be_active;
+
+    L stepper;
 };
 
 #endif //KESTEN_SIM_KESTENSIMULATION_H

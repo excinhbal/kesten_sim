@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     std::cout << mpiInfo << std::endl;
 
     {
-        MpiKestenSim sim(p, mpiInfo);
+        MpiKestenSim<Parameters, KestenStep> sim(p, mpiInfo);
         while (sim.hasNextStep()) {
             sim.doStep();
         }

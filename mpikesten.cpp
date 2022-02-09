@@ -18,8 +18,9 @@ MPI_Datatype register_structural_events_type()
     return mpi_new_type;
 }
 
-MpiKestenSim::MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo_)
-        : KestenSimulation(p, NodeParameters{
+template<typename P, typename L>
+MpiKestenSim<P, L>::MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo_)
+        : KestenSimulation<P, L>(p, NodeParameters{
             .N_e =  mpiInfo_.i_end-mpiInfo_.i_start,
             .neuronOffset =  mpiInfo_.i_start,
             .seedOffset =  mpiInfo_.rank,
@@ -30,8 +31,8 @@ MpiKestenSim::MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo_)
 
 }
 
-
-int MpiKestenSim::synchronizeActive(int n_active)
+template<typename P, typename L>
+int MpiKestenSim<P, L>::synchronizeActive(int n_active)
 {
     int n_active_all;
     MPI_Allreduce(&n_active, &n_active_all, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
@@ -39,7 +40,8 @@ int MpiKestenSim::synchronizeActive(int n_active)
     return n_active_all;
 }
 
-void MpiKestenSim::mpiSendAndCollectWeights()
+template<typename P, typename L>
+void MpiKestenSim<P, L>::mpiSendAndCollectWeights()
 {
     // TODO make w storage fully continuous
     auto size_acc = [](const int& acc, const auto& neuron_w) { return acc + neuron_w.size(); };
@@ -81,7 +83,8 @@ void MpiKestenSim::mpiSendAndCollectWeights()
                 0, MPI_COMM_WORLD);
 }
 
-void MpiKestenSim::mpiSendAndCollectStrctEvents()
+template<typename P, typename L>
+void MpiKestenSim<P, L>::mpiSendAndCollectStrctEvents()
 {
     structual_events.reverse();
     auto eventBefore = [](const StructuralPlasticityEvent& ev1, const StructuralPlasticityEvent& ev2) { return ev1.t < ev2.t; };
@@ -111,7 +114,8 @@ void MpiKestenSim::mpiSendAndCollectStrctEvents()
     }
 }
 
-void MpiKestenSim::mpiSaveResults()
+template<typename P, typename L>
+void MpiKestenSim<P, L>::mpiSaveResults()
 {
     std::chrono::steady_clock::time_point t_now = std::chrono::steady_clock::now();
     auto t_since_begin = std::chrono::duration_cast<std::chrono::seconds>(t_now - t_begin).count();
@@ -137,3 +141,4 @@ std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info)
     return ostream;
 }
 
+template class MpiKestenSim<Parameters, KestenStep>;

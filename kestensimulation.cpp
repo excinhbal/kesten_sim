@@ -10,8 +10,43 @@ namespace {
     }
 }
 
+KestenStep::KestenStep(const Parameters& p_)
+    : p(p_)
+    , norm(0, 1)
+{ }
 
-KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
+void KestenStep::step(std::mt19937& gen, std::vector<std::vector<double>>& w)
+{
+    for (auto& neuron_w : w) {
+        for (auto& w_: neuron_w) {
+            // using Stochastic Heun method, scheme from Brian2 (see brian2/stateupdaters/explicit.py)
+            // x - the variable
+            // g(x,t) - part of the equation that is stochastic
+            // f(x,t) - non-stochastic part
+            // dW ~ Norm(0, sqrt(dt))
+            //
+            // x_support = x + g(x,t) * dW
+            // g_support = g(x_support,t+dt)
+            // x_new = x + dt*f(x,t) + .5*dW*(g(x,t)+g_support)
+
+            double xi_kesten = sqrt(p.dt) * norm(gen);
+            auto g = [this](const double w_) {
+                return sqrt(p.syn_kesten_var_eta + p.syn_kesten_var_epsilon_1 * pow(w_, 2));
+            };
+            auto f = [this](const double w_) {
+                return p.syn_kesten_mu_eta + p.syn_kesten_mu_epsilon_1 * w_;
+            };
+            double x_support = w_ + norm(gen) * g(w_);
+            double g_support = g(x_support);
+            w_ = w_ + p.dt * f(w_) + 0.5 * xi_kesten * (g(w_) + g_support);
+            if (p.do_clamp_after_kesten)
+                w_ = std::clamp(w_, p.w_min, p.w_max);
+        }
+    }
+}
+
+template<typename P, typename L>
+KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
         : p(p_)
         , nP(nP_)
         , n_ownNeurons(nP.N_e.has_value() ? nP.N_e.value() : p.N_e)
@@ -26,9 +61,9 @@ KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
         , is(n_ownNeurons, std::vector<unsigned short>(n_potentiallyIncoming, 0))
         , gen(p.seed + nP.seedOffset)
         , unif(0.0, 1.0)
-        , norm(0, 1)
         , n_available(p.N_e*w[0].size())
         , n_should_be_active(std::ceil(p.p_conn_fraction*n_available))
+        , stepper(p)
 {
     // initialize weights
     for (int j = 0; j < w.size(); ++j) { // TODO use fancy iterator
@@ -45,12 +80,14 @@ KestenSimulation::KestenSimulation(const Parameters& p_, NodeParameters nP_)
     }
 }
 
-bool KestenSimulation::hasNextStep() const
+template<typename P, typename L>
+bool KestenSimulation<P, L>::hasNextStep() const
 {
     return step < steps;
 }
 
-void KestenSimulation::doStep()
+template<typename P, typename L>
+void KestenSimulation<P, L>::doStep()
 {
     if (!hasNextStep())
         return;
@@ -100,7 +137,7 @@ void KestenSimulation::doStep()
                         is[j].insert(index_i, i);
                         index_i++;
                         // index_i is now pointing at the next element after i, which is where it should point at
-                        // for the next continuation of the for loop
+                        // for the next continuation of the for step
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Create,
                                 ((double)step)/((double)steps) * p.T/second,
@@ -113,32 +150,7 @@ void KestenSimulation::doStep()
     }
 
     // kesten
-    for (auto& neuron_w : w) {
-        for (auto& w_: neuron_w) {
-            // using Stochastic Heun method, scheme from Brian2 (see brian2/stateupdaters/explicit.py)
-            // x - the variable
-            // g(x,t) - part of the equation that is stochastic
-            // f(x,t) - non-stochastic part
-            // dW ~ Norm(0, sqrt(dt))
-            //
-            // x_support = x + g(x,t) * dW
-            // g_support = g(x_support,t+dt)
-            // x_new = x + dt*f(x,t) + .5*dW*(g(x,t)+g_support)
-
-            double xi_kesten = sqrt(p.dt)*norm(gen);
-            auto g = [this](const double w_) {
-                return sqrt(p.syn_kesten_var_eta + p.syn_kesten_var_epsilon_1 * pow(w_, 2));
-            };
-            auto f = [this](const double w_) {
-                return p.syn_kesten_mu_eta + p.syn_kesten_mu_epsilon_1 * w_;
-            };
-            double x_support = w_ + norm(gen)*g(w_);
-            double g_support = g(x_support);
-            w_ = w_ + p.dt*f(w_) + 0.5*xi_kesten*(g(w_)+g_support);
-            if (p.do_clamp_after_kesten)
-                w_ = std::clamp(w_, p.w_min, p.w_max);
-        }
-    }
+    stepper.step(gen, w);
 
     // normalization
     if (p.do_norm && do_norm(step, norm_steps)) {
@@ -164,7 +176,8 @@ void KestenSimulation::doStep()
     step++;
 }
 
-void KestenSimulation::saveResults()
+template<typename P, typename L>
+void KestenSimulation<P, L>::saveResults()
 {
     std::chrono::steady_clock::time_point t_now = std::chrono::steady_clock::now();
     auto t_since_begin = std::chrono::duration_cast<std::chrono::seconds>(t_now - t_begin).count();
@@ -185,8 +198,10 @@ void KestenSimulation::saveResults()
     turnover_file.close();
 }
 
-int KestenSimulation::synchronizeActive(int n_active)
+template<typename P, typename L>
+int KestenSimulation<P, L>::synchronizeActive(int n_active)
 {
     return n_active;
 }
 
+template class KestenSimulation<Parameters, KestenStep>;

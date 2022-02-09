@@ -15,7 +15,13 @@ struct MpiInfo
     MPI_Datatype MPI_Type_StructuralPlasticityEvent = MPI_DATATYPE_NULL;
 };
 
-class MpiKestenSim : public KestenSimulation {
+template<typename P, typename L>
+class MpiKestenSim : public KestenSimulation<P, L> {
+    using KestenSimulation<P, L>::w;
+    using KestenSimulation<P, L>::structual_events;
+    using KestenSimulation<P, L>::t_begin;
+    using KestenSimulation<P, L>::steps;
+
 public:
     MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo);
 
