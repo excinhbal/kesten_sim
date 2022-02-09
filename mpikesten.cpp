@@ -56,8 +56,10 @@ void MpiKestenSim<P, L>::mpiSendAndCollectWeights()
     }
 
     std::vector<int> counts(0);
+    std::vector<int> offsets(0);
     if (mpiInfo.rank == 0) {
         counts.resize(mpiInfo.world_size);
+        offsets.resize(mpiInfo.world_size);
         std::cout << "mpiInfo.world_size" << " " << mpiInfo.world_size << std::endl;
     }
     std::cout << "sending " << n_active << std::endl;
@@ -70,16 +72,19 @@ void MpiKestenSim<P, L>::mpiSendAndCollectWeights()
         std::cout << std::endl;
     }
 
-    int n_active_all = std::accumulate(counts.cbegin(), counts.cend(), 0);
     if (mpiInfo.rank == 0) { // root, we receive
+        int n_active_all = std::accumulate(counts.cbegin(), counts.cend(), 0);
         w_all.resize(n_active_all, 0.0);
         std::cout << "MPI(" << mpiInfo.rank << ")" << " receiving " << w_all.size() << std::endl;
+
+        // first offset is 0 (skipped by partial sum)
+        // second offset is length of first element
+        // we don't care about size of last element for offset calculation
+        std::partial_sum(counts.cbegin(), (--counts.cend()), (++offsets.begin()));
     }
-    std::vector<int> offsets(counts.size());
-    std::partial_sum(counts.cbegin(), counts.cend(), offsets.begin());
     std::cout << "MPI(" << mpiInfo.rank << ")" << " sending " << own_w.size() << std::endl;
     MPI_Gatherv(own_w.data(), own_w.size(), MPI_DOUBLE,
-                w_all.data(), offsets.data(), counts.data(), MPI_DOUBLE,
+                w_all.data(), counts.data(), offsets.data(), MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
 }
 
