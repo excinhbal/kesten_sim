@@ -23,7 +23,7 @@ class MpiKestenSim : public KestenSimulation<P, L> {
     using KestenSimulation<P, L>::steps;
 
 public:
-    MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo);
+    MpiKestenSim(const P& p, const MpiInfo& mpiInfo);
 
     void mpiSendAndCollectWeights();
     void mpiSendAndCollectStrctEvents();

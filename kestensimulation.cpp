@@ -45,6 +45,25 @@ void KestenStep::step(std::mt19937& gen, std::vector<std::vector<double>>& w)
     }
 }
 
+QuadStep::QuadStep(const QuadParameters& p_)
+    : p(p_)
+    , alpha(p.mu_alpha, sqrt(p.var_alpha))
+    , beta(p.mu_beta, sqrt(p.var_beta))
+    , gamma(p.mu_gamma, sqrt(p.var_gamma))
+{ }
+
+void QuadStep::step(std::mt19937& gen, std::vector<std::vector<double>>& w)
+{
+    for (auto& neuron_w : w) {
+        for (auto& w_: neuron_w) {
+            w_ = alpha(gen) + beta(gen)*w_ + gamma(gen)*pow(w_, 2);
+
+            if (p.do_clamp_after_kesten)
+                w_ = std::clamp(w_, p.w_min, p.w_max);
+        }
+    }
+}
+
 template<typename P, typename L>
 KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
         : p(p_)
@@ -205,3 +224,5 @@ int KestenSimulation<P, L>::synchronizeActive(int n_active)
 }
 
 template class KestenSimulation<Parameters, KestenStep>;
+template class KestenSimulation<QuadParameters, QuadStep>;
+

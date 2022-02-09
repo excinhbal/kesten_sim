@@ -19,7 +19,7 @@ MPI_Datatype register_structural_events_type()
 }
 
 template<typename P, typename L>
-MpiKestenSim<P, L>::MpiKestenSim(const Parameters& p, const MpiInfo& mpiInfo_)
+MpiKestenSim<P, L>::MpiKestenSim(const P& p, const MpiInfo& mpiInfo_)
         : KestenSimulation<P, L>(p, NodeParameters{
             .N_e =  mpiInfo_.i_end-mpiInfo_.i_start,
             .neuronOffset =  mpiInfo_.i_start,
@@ -142,3 +142,4 @@ std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info)
 }
 
 template class MpiKestenSim<Parameters, KestenStep>;
+template class MpiKestenSim<QuadParameters, QuadStep>;

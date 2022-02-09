@@ -43,6 +43,37 @@ struct Parameters
     long unsigned int seed = 193945;
 };
 
+struct QuadParameters
+{
+    int N_e = 1600;
+    double eta_norm = 1.0;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(QuadParameters,
+                                                eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct, do_norm, do_clamp_after_kesten,
+                                                mu_alpha, var_alpha, mu_beta, var_beta, mu_gamma, var_gamma, seed)
+    double eta_targ = 12.5;
+    double w_min = 0.0363;
+    double w_max = 0.3244;
+    double p_conn_fraction = 0.08;
+    double p_inact = 0.1;
+    double T = 20 * second;
+    double dt = 100.0; //ms
+    double dt_norm = 100.0; //ms
+    double dt_strct = 1000.0; //ms
+
+    bool do_norm = true;
+    bool do_clamp_after_kesten = false;
+
+    double mu_alpha = 0.0/second;
+    double var_alpha = 0.0/second;
+    double mu_beta = 0.0/second;
+    double var_beta = 0.0/second;
+    double mu_gamma = 0.0/second;
+    double var_gamma = 0.0/second;
+
+    long unsigned int seed = 193945;
+};
+
 struct NodeParameters {
     std::optional<int> N_e = {};
     int neuronOffset = 0;
@@ -79,13 +110,24 @@ typename std::enable_if<std::is_same<StructuralPlasticityEvent, T>::value, std::
 class KestenStep
 {
 public:
-    KestenStep(const Parameters& p);
+    explicit KestenStep(const Parameters& p);
     void step(std::mt19937& gen, std::vector<std::vector<double>>& w_);
 private:
     const Parameters p;
     std::normal_distribution<double> norm;
 };
 
+class QuadStep
+{
+public:
+    explicit QuadStep(const QuadParameters& p);
+    void step(std::mt19937& gen, std::vector<std::vector<double>>& w);
+private:
+    const QuadParameters p;
+    std::normal_distribution<double> alpha;
+    std::normal_distribution<double> beta;
+    std::normal_distribution<double> gamma;
+};
 
 template<typename P, typename L>
 class KestenSimulation
@@ -109,7 +151,7 @@ protected:
     [[nodiscard]] virtual int synchronizeActive(int n_active);
 
 protected:
-    const Parameters p;
+    const P p;
     const NodeParameters nP;
     int n_ownNeurons;
     int n_potentiallyIncoming;
