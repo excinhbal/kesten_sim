@@ -47,17 +47,15 @@ void KestenStep::step(std::mt19937& gen, std::vector<std::vector<double>>& w)
 
 QuadStep::QuadStep(const QuadParameters& p_)
     : p(p_)
-    , alpha(p.mu_alpha, sqrt(p.var_alpha))
-    , beta(p.mu_beta, sqrt(p.var_beta))
-    , gamma(p.mu_gamma, sqrt(p.var_gamma))
+    , norm(0, 1)
 { }
 
 void QuadStep::step(std::mt19937& gen, std::vector<std::vector<double>>& w)
 {
     for (auto& neuron_w : w) {
         for (auto& w_: neuron_w) {
-            w_ = alpha(gen) + beta(gen)*w_ + gamma(gen)*pow(w_, 2);
-
+            w_ += p.mu_alpha + p.mu_beta_1*w_ + p.mu_gamma*pow(w_, 2)
+                  + sqrt(p.var_alpha + p.var_beta_1*pow(w_, 2) + p.var_gamma*pow(w_, 4)) * norm(gen);
             if (p.do_clamp_after_kesten)
                 w_ = std::clamp(w_, p.w_min, p.w_max);
         }

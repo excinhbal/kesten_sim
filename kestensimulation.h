@@ -50,7 +50,7 @@ struct QuadParameters
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(QuadParameters,
                                                 eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct, do_norm, do_clamp_after_kesten,
-                                                mu_alpha, var_alpha, mu_beta, var_beta, mu_gamma, var_gamma, seed)
+                                                mu_alpha, var_alpha, mu_beta_1, var_beta_1, mu_gamma, var_gamma, seed)
     double eta_targ = 12.5;
     double w_min = 0.0363;
     double w_max = 0.3244;
@@ -66,8 +66,8 @@ struct QuadParameters
 
     double mu_alpha = 0.0/second;
     double var_alpha = 0.0/second;
-    double mu_beta = 0.0/second;
-    double var_beta = 0.0/second;
+    double mu_beta_1 = 0.0/second;
+    double var_beta_1 = 0.0/second;
     double mu_gamma = 0.0/second;
     double var_gamma = 0.0/second;
 
@@ -124,9 +124,7 @@ public:
     void step(std::mt19937& gen, std::vector<std::vector<double>>& w);
 private:
     const QuadParameters p;
-    std::normal_distribution<double> alpha;
-    std::normal_distribution<double> beta;
-    std::normal_distribution<double> gamma;
+    std::normal_distribution<double> norm;
 };
 
 template<typename P, typename L>
