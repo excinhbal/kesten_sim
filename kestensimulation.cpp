@@ -82,6 +82,7 @@ KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
         , n_should_be_active(std::ceil(p.p_conn_fraction*n_available))
         , stepper(p)
 {
+    int n_active_initially = 0;
     // initialize weights
     for (int j = 0; j < w.size(); ++j) { // TODO use fancy iterator
         w[j].resize(0); // this does not reduce capacity, but we will only iterate over the active elements
@@ -94,7 +95,15 @@ KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
                 is[j].push_back(i);
             }
         }
+        n_active_initially += is[j].size();
     }
+    active_initial.reserve(n_active_initially);
+    for (unsigned short j = 0; j < w.size(); ++j) {
+        for (const unsigned short i : is[j]) {
+            active_initial.emplace_back(i, j);
+        }
+    }
+    std::cout << std::endl;
 }
 
 template<typename P, typename L>
@@ -213,6 +222,10 @@ void KestenSimulation<P, L>::saveResults()
     std::ofstream turnover_file("./turnover.txt");
     turnover_file << structual_events;
     turnover_file.close();
+
+    std::ofstream initial_active_file("./initial_active.txt");
+    initial_active_file << active_initial;
+    initial_active_file.close();
 }
 
 template<typename P, typename L>

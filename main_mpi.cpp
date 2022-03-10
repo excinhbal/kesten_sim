@@ -10,6 +10,7 @@ int main(int argc, char** argv) {
 
     MpiInfo mpiInfo;
     mpiInfo.MPI_Type_StructuralPlasticityEvent = register_structural_events_type();
+    mpiInfo.MPI_Type_Synapse = register_synapse_type();
     MPI_Comm_size(MPI_COMM_WORLD, &mpiInfo.world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpiInfo.rank);
 
@@ -25,6 +26,7 @@ int main(int argc, char** argv) {
         }
         sim.mpiSendAndCollectWeights();
         sim.mpiSendAndCollectStrctEvents();
+        sim.mpiSendAndCollectInitialActive();
         if (mpiInfo.rank == 0) {
             sim.mpiSaveResults();
         }

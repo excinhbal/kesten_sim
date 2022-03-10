@@ -25,4 +25,8 @@ TEST_CASE("End-to-end seed 193945") {
     auto turnover = readfile("./turnover.txt");
     auto turnover_actual = readfile("../testdata/turnover.txt");
     REQUIRE(turnover == turnover_actual);
+
+    auto initial_active = readfile("./initial_active.txt");
+    auto initial_active_actual = readfile("../testdata/initial_active.txt");
+    REQUIRE(initial_active == initial_active_actual);
 }

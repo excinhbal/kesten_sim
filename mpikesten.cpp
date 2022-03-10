@@ -10,9 +10,25 @@ MPI_Datatype register_structural_events_type()
             offsetof(StructuralPlasticityEvent, i),
             offsetof(StructuralPlasticityEvent, j)
     };
-    MPI_Datatype types[] = {MPI_INT, MPI_DOUBLE, MPI_INT, MPI_INT};
+    MPI_Datatype types[] = {MPI_CHAR, MPI_DOUBLE, MPI_INT16_T, MPI_INT16_T};
     MPI_Type_create_struct(
             4, blockLengths, displacements, types, &mpi_new_type
+    );
+    MPI_Type_commit(&mpi_new_type);
+    return mpi_new_type;
+}
+
+MPI_Datatype register_synapse_type()
+{
+    MPI_Datatype mpi_new_type;
+    int blockLengths[] = {1, 1};
+    MPI_Aint displacements[] = {
+            offsetof(Synapse, i),
+            offsetof(Synapse, j)
+    };
+    MPI_Datatype types[] = {MPI_INT16_T, MPI_INT16_T};
+    MPI_Type_create_struct(
+            2, blockLengths, displacements, types, &mpi_new_type
     );
     MPI_Type_commit(&mpi_new_type);
     return mpi_new_type;
@@ -120,6 +136,36 @@ void MpiKestenSim<P, L>::mpiSendAndCollectStrctEvents()
 }
 
 template<typename P, typename L>
+void MpiKestenSim<P, L>::mpiSendAndCollectInitialActive()
+{
+    std::vector<int> counts(0);
+    std::vector<int> offsets(0);
+    if (mpiInfo.rank == 0) {
+        counts.resize(mpiInfo.world_size);
+        offsets.resize(mpiInfo.world_size);
+    }
+    int n_initial_active = this->active_initial.size();
+    MPI_Gather(&n_initial_active, 1, MPI_INT,
+               counts.data(), 1, MPI_INT,
+               0, MPI_COMM_WORLD);
+
+    if (mpiInfo.rank == 0) { // root, we receive
+        int n_active_all = std::accumulate(counts.cbegin(), counts.cend(), 0);
+        active_initial_all.resize(n_active_all, Synapse());
+        std::cout << "MPI(" << mpiInfo.rank << ")" << " receiving " << active_initial_all.size() << std::endl;
+
+        // first offset is 0 (skipped by partial sum)
+        // second offset is length of first element
+        // we don't care about size of last element for offset calculation
+        std::partial_sum(counts.cbegin(), (--counts.cend()), (++offsets.begin()));
+    }
+
+    MPI_Gatherv(this->active_initial.data(), this->active_initial.size(), mpiInfo.MPI_Type_Synapse,
+                active_initial_all.data(), counts.data(), offsets.data(), mpiInfo.MPI_Type_Synapse,
+                0, MPI_COMM_WORLD);
+}
+
+template<typename P, typename L>
 void MpiKestenSim<P, L>::mpiSaveResults()
 {
     std::chrono::steady_clock::time_point t_now = std::chrono::steady_clock::now();
@@ -136,6 +182,10 @@ void MpiKestenSim<P, L>::mpiSaveResults()
     std::ofstream turnover_file("./turnover.txt");
     turnover_file << structual_events_all;
     turnover_file.close();
+
+    std::ofstream initial_active_file("./initial_active.txt");
+    initial_active_file << active_initial_all;
+    initial_active_file.close();
 }
 
 std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info)

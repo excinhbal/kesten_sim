@@ -87,12 +87,24 @@ struct StructuralPlasticityEvent {  // 1 create 0 destroy | t | i | j
     std::uint16_t i;
     std::uint16_t j;
 
-    StructuralPlasticityEvent() { }
+    StructuralPlasticityEvent() = default;
 
     StructuralPlasticityEvent(StructuralPlasticityEventType type_, double t_, std::uint16_t i_, std::uint16_t j_)
         : type(type_)
         , t(t_)
         , i(i_)
+        , j(j_)
+    { }
+};
+
+struct Synapse {
+    std::uint16_t i;
+    std::uint16_t j;
+
+    Synapse() = default;
+
+    Synapse(std::uint16_t i_, std::uint16_t j_)
+        : i(i_)
         , j(j_)
     { }
 };
@@ -103,6 +115,16 @@ typename std::enable_if<std::is_same<StructuralPlasticityEvent, T>::value, std::
 {
     for (const auto& event : events) {
         stream << (int) event.type << " " << event.t << " " << event.i << " " << event.j << "\n";
+    }
+    return stream;
+}
+
+template<typename Container, typename T = typename Container::value_type>
+typename std::enable_if<std::is_same<Synapse, T>::value, std::ostream&>::type
+operator<<(std::ostream& stream, const Container& events)
+{
+    for (const auto& event : events) {
+        stream << event.i << " " << event.j << "\n";
     }
     return stream;
 }
@@ -173,6 +195,7 @@ protected:
     std::vector<std::vector<double>> w;
     std::vector<std::vector<unsigned short>> is;
     std::forward_list<StructuralPlasticityEvent> structual_events;
+    std::vector<Synapse> active_initial;
 
     std::mt19937 gen;
     std::uniform_real_distribution<double> unif;
