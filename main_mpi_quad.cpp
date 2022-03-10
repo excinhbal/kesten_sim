@@ -26,6 +26,7 @@ int main(int argc, char** argv) {
         }
         sim.mpiSendAndCollectWeights();
         sim.mpiSendAndCollectStrctEvents();
+        sim.mpiSendAndCollectInitialActive();
         if (mpiInfo.rank == 0) {
             sim.mpiSaveResults();
         }
