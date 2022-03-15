@@ -109,6 +109,18 @@ struct Synapse {
     { }
 };
 
+struct SurvivalTime {
+    std::uint32_t t_creation;
+    std::uint32_t t_survival;
+
+    SurvivalTime() = default;
+
+    SurvivalTime(std::uint32_t t_creation_, std::uint32_t t_survival_)
+        : t_creation(t_creation_)
+        , t_survival(t_survival_)
+    { }
+};
+
 template<typename Container, typename T = typename Container::value_type>
 typename std::enable_if<std::is_same<StructuralPlasticityEvent, T>::value, std::ostream&>::type
          operator<<(std::ostream& stream, const Container& events)
@@ -128,6 +140,18 @@ operator<<(std::ostream& stream, const Container& events)
     }
     return stream;
 }
+
+template<typename Container, typename T = typename Container::value_type>
+typename std::enable_if<std::is_same<SurvivalTime, T>::value, std::ostream&>::type
+operator<<(std::ostream& stream, const Container& events)
+{
+    for (const auto& event : events) {
+        stream << event.t_creation << " " << event.t_survival << "\n";
+    }
+    return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream, const SurvivalTime& event);
 
 class KestenStep
 {
@@ -194,7 +218,9 @@ protected:
      */
     std::vector<std::vector<double>> w;
     std::vector<std::vector<unsigned short>> is;
+    std::vector<std::vector<StructuralPlasticityEvent*>> creation_times;
     std::forward_list<StructuralPlasticityEvent> structual_events;
+    std::forward_list<SurvivalTime> survival_times;
     std::vector<Synapse> active_initial;
 
     std::mt19937 gen;

@@ -34,6 +34,22 @@ MPI_Datatype register_synapse_type()
     return mpi_new_type;
 }
 
+MPI_Datatype register_survival_time_type()
+{
+    MPI_Datatype mpi_new_type;
+    int blockLengths[] = {1, 1};
+    MPI_Aint displacements[] = {
+            offsetof(SurvivalTime, t_creation),
+            offsetof(SurvivalTime, t_survival)
+    };
+    MPI_Datatype types[] = {MPI_INT32_T, MPI_INT32_T};
+    MPI_Type_create_struct(
+            2, blockLengths, displacements, types, &mpi_new_type
+    );
+    MPI_Type_commit(&mpi_new_type);
+    return mpi_new_type;
+}
+
 template<typename P, typename L>
 MpiKestenSim<P, L>::MpiKestenSim(const P& p, const MpiInfo& mpiInfo_)
         : KestenSimulation<P, L>(p, NodeParameters{
@@ -104,35 +120,48 @@ void MpiKestenSim<P, L>::mpiSendAndCollectWeights()
                 0, MPI_COMM_WORLD);
 }
 
+namespace {
+    template<class EventType, typename EventBefore>
+    void sendAndCollectEvents(const MpiInfo& mpiInfo,
+                              std::forward_list<EventType>& own_events,
+                              std::vector<EventType>& events_all,
+                              EventBefore eventBefore,
+                              MPI_Datatype mpiEventType) {
+        own_events.reverse();
+        if (mpiInfo.rank == 0) { // root => receive
+            std::vector<EventType> own_source(own_events.cbegin(), own_events.cend());
+            own_events.clear();
+            std::vector<EventType> events_target{0};
+            for (int i = 1; i < mpiInfo.world_size; ++i) {
+                MPI_Status status;
+                MPI_Probe(i, -1, MPI_COMM_WORLD, &status);
+                int count;
+                MPI_Get_count(&status, mpiEventType, &count);
+                std::vector<EventType> events(count);
+                events_target.resize(own_source.size() + count);
+                MPI_Recv(events.data(), count, mpiEventType, i, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                std::merge(own_source.cbegin(), own_source.cend(), events.cbegin(), events.cend(), events_target.begin(), eventBefore);
+                own_source = std::move(events_target);
+                events_target = {};
+            }
+            events_all = std::move(own_source);
+        } else {
+            std::vector<EventType> own_data(own_events.cbegin(), own_events.cend());
+            MPI_Send(own_data.data(), own_data.size(), mpiEventType, 0, 42, MPI_COMM_WORLD);
+            own_events.clear();
+            own_data.resize(0);
+            own_data.shrink_to_fit();
+        }
+    }
+}
+
 template<typename P, typename L>
 void MpiKestenSim<P, L>::mpiSendAndCollectStrctEvents()
 {
-    structual_events.reverse();
     auto eventBefore = [](const StructuralPlasticityEvent& ev1, const StructuralPlasticityEvent& ev2) { return ev1.t < ev2.t; };
-    if (mpiInfo.rank == 0) { // root => receive
-        std::vector<StructuralPlasticityEvent> own_source(structual_events.cbegin(), structual_events.cend());
-        structual_events.clear();
-        std::vector<StructuralPlasticityEvent> events_target{0};
-        for (int i = 1; i < mpiInfo.world_size; ++i) {
-            MPI_Status status;
-            MPI_Probe(i, -1, MPI_COMM_WORLD, &status);
-            int count;
-            MPI_Get_count(&status, mpiInfo.MPI_Type_StructuralPlasticityEvent, &count);
-            std::vector<StructuralPlasticityEvent> events(count);
-            events_target.resize(own_source.size() + count);
-            MPI_Recv(events.data(), count, mpiInfo.MPI_Type_StructuralPlasticityEvent, i, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            std::merge(own_source.cbegin(), own_source.cend(), events.cbegin(), events.cend(), events_target.begin(), eventBefore);
-            own_source = std::move(events_target);
-            events_target = {};
-        }
-        structual_events_all = std::move(own_source);
-    } else {
-        std::vector<StructuralPlasticityEvent> own_data(structual_events.cbegin(), structual_events.cend());
-        MPI_Send(own_data.data(), own_data.size(), mpiInfo.MPI_Type_StructuralPlasticityEvent, 0, 42, MPI_COMM_WORLD);
-        structual_events.clear();
-        own_data.resize(0);
-        own_data.shrink_to_fit();
-    }
+    MPI_Datatype mpiEventType = mpiInfo.MPI_Type_StructuralPlasticityEvent;
+    sendAndCollectEvents<StructuralPlasticityEvent>(
+            mpiInfo, this->structual_events, this->structual_events_all, eventBefore, mpiEventType);
 }
 
 template<typename P, typename L>
@@ -166,6 +195,18 @@ void MpiKestenSim<P, L>::mpiSendAndCollectInitialActive()
 }
 
 template<typename P, typename L>
+void MpiKestenSim<P, L>::mpiSendAndCollectSurvivalTimes()
+{
+    std::cout << "MPI(" << mpiInfo.rank << ") " << "collecting survival times" << std::endl;
+    auto eventAfter = [](const SurvivalTime& ev1, const SurvivalTime& ev2) { return ev1.t_creation > ev2.t_creation; };
+    auto eventBefore = [](const SurvivalTime& ev1, const SurvivalTime& ev2) { return ev1.t_creation < ev2.t_creation; };
+    MPI_Datatype mpiEventType = mpiInfo.MPI_Type_SurvivalTime;
+    this->survival_times.sort(eventAfter);
+    sendAndCollectEvents<SurvivalTime>(
+            mpiInfo, this->survival_times, this->survival_times_all, eventBefore, mpiEventType);
+}
+
+template<typename P, typename L>
 void MpiKestenSim<P, L>::mpiSaveResults()
 {
     std::chrono::steady_clock::time_point t_now = std::chrono::steady_clock::now();
@@ -186,6 +227,10 @@ void MpiKestenSim<P, L>::mpiSaveResults()
     std::ofstream initial_active_file("./initial_active.txt");
     initial_active_file << active_initial_all;
     initial_active_file.close();
+
+    std::ofstream survival_times_kesten_file("./survival_times.txt");
+    survival_times_kesten_file << survival_times_all;
+    survival_times_kesten_file.close();
 }
 
 std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info)

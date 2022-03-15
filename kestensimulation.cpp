@@ -76,6 +76,7 @@ KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
         , strct_steps(std::ceil(p.dt_strct/p.dt))
         , w(n_ownNeurons, std::vector<double>(n_potentiallyIncoming, 0.0))
         , is(n_ownNeurons, std::vector<unsigned short>(n_potentiallyIncoming, 0))
+        , creation_times(n_ownNeurons, std::vector<StructuralPlasticityEvent*>(n_potentiallyIncoming, nullptr))
         , gen(p.seed + nP.seedOffset)
         , unif(0.0, 1.0)
         , n_available(p.N_e*w[0].size())
@@ -137,6 +138,7 @@ void KestenSimulation<P, L>::doStep()
 
         // Brian2 uses i->j which is not how our array is laid out
         const double w_prune = p.w_min;
+        const int t = (int) ((double) step) / ((double) steps) * p.T / second;
         for (int j = 0; j < n_ownNeurons; ++j) {
             auto index_i = is[j].begin();
             for (int i = 0; i < n_potentiallyIncoming; ++i) {
@@ -148,9 +150,17 @@ void KestenSimulation<P, L>::doStep()
                         is[j].erase(index_i);
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Destroy,
-                                ((double)step)/((double)steps) * p.T/second,
+                                t,
                                 i, nP.neuronOffset+j
                         );
+                        auto creation_event = creation_times[j][i];
+                        if (creation_event) {
+                            auto surv_time = survival_times.emplace_front(
+                                    (std::uint32_t)creation_event->t, (std::uint32_t)t-creation_event->t
+                            );
+                            std::cout << surv_time << std::endl;
+                            creation_times[j][i] = nullptr;
+                        }
                         // erase operation automatically makes index_i point at next element
                     } else {
                         index_i++;
@@ -166,9 +176,10 @@ void KestenSimulation<P, L>::doStep()
                         // for the next continuation of the for step
                         structual_events.emplace_front(
                                 StructuralPlasticityEventType::Create,
-                                ((double)step)/((double)steps) * p.T/second,
+                                t,
                                 i, nP.neuronOffset+j
                         );
+                        creation_times[j][i] = &structual_events.front();
                     }
                 }
             }
@@ -237,3 +248,8 @@ int KestenSimulation<P, L>::synchronizeActive(int n_active)
 template class KestenSimulation<Parameters, KestenStep>;
 template class KestenSimulation<QuadParameters, QuadStep>;
 
+std::ostream& operator<<(std::ostream& stream, const SurvivalTime& event)
+{
+    stream << event.t_creation << " " << event.t_survival;
+    return stream;
+}
