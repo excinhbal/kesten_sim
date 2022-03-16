@@ -158,7 +158,7 @@ void KestenSimulation<P, L>::doStep()
                             auto surv_time = survival_times.emplace_front(
                                     (std::uint32_t)creation_event->t, (std::uint32_t)t-creation_event->t
                             );
-                            std::cout << surv_time << std::endl;
+                            // std::cout << surv_time << std::endl;
                             creation_times[j][i] = nullptr;
                         }
                         // erase operation automatically makes index_i point at next element
