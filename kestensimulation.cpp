@@ -161,7 +161,7 @@ void KestenSimulation<P, L>::doStep()
                         );
                         auto creation_event = creation_times[j][i];
                         if (creation_event) {
-                            survival_times.emplace_front(
+                            observation_times.emplace_front(
                                     (std::uint32_t)creation_event->t, (std::uint32_t)t-creation_event->t
                             );
                             // std::cout << surv_time << std::endl;
@@ -231,7 +231,7 @@ void KestenSimulation<P, L>::afterLastStep()
         for (const unsigned short i : is[j]) {
             auto creation_event = creation_times[j][i];
             if (creation_event) {
-                survival_times.emplace_front(
+                observation_times.emplace_front(
                     (std::uint32_t)creation_event->t, (std::uint32_t)t-creation_event->t
                 );
             }
@@ -274,8 +274,8 @@ int KestenSimulation<P, L>::synchronizeActive(int n_active)
 template class KestenSimulation<Parameters, KestenStep>;
 template class KestenSimulation<QuadParameters, QuadStep>;
 
-std::ostream& operator<<(std::ostream& stream, const SurvivalTime& event)
+std::ostream& operator<<(std::ostream& stream, const ObservationTime& event)
 {
-    stream << event.t_creation << " " << event.t_survival;
+    stream << event.t_creation << " " << event.t_observation;
     return stream;
 }

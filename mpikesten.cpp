@@ -34,13 +34,13 @@ MPI_Datatype register_synapse_type()
     return mpi_new_type;
 }
 
-MPI_Datatype register_survival_time_type()
+MPI_Datatype register_observation_time_type()
 {
     MPI_Datatype mpi_new_type;
     int blockLengths[] = {1, 1};
     MPI_Aint displacements[] = {
-            offsetof(SurvivalTime, t_creation),
-            offsetof(SurvivalTime, t_survival)
+            offsetof(ObservationTime, t_creation),
+            offsetof(ObservationTime, t_observation)
     };
     MPI_Datatype types[] = {MPI_INT32_T, MPI_INT32_T};
     MPI_Type_create_struct(
@@ -195,15 +195,15 @@ void MpiKestenSim<P, L>::mpiSendAndCollectInitialActive()
 }
 
 template<typename P, typename L>
-void MpiKestenSim<P, L>::mpiSendAndCollectSurvivalTimes()
+void MpiKestenSim<P, L>::mpiSendAndCollectObservationTimes()
 {
-    std::cout << "MPI(" << mpiInfo.rank << ") " << "collecting survival times" << std::endl;
-    auto eventAfter = [](const SurvivalTime& ev1, const SurvivalTime& ev2) { return ev1.t_creation > ev2.t_creation; };
-    auto eventBefore = [](const SurvivalTime& ev1, const SurvivalTime& ev2) { return ev1.t_creation < ev2.t_creation; };
-    MPI_Datatype mpiEventType = mpiInfo.MPI_Type_SurvivalTime;
-    this->survival_times.sort(eventAfter);
-    sendAndCollectEvents<SurvivalTime>(
-            mpiInfo, this->survival_times, this->survival_times_all, eventBefore, mpiEventType);
+    std::cout << "MPI(" << mpiInfo.rank << ") " << "collecting observation times" << std::endl;
+    auto eventAfter = [](const ObservationTime& ev1, const ObservationTime& ev2) { return ev1.t_creation > ev2.t_creation; };
+    auto eventBefore = [](const ObservationTime& ev1, const ObservationTime& ev2) { return ev1.t_creation < ev2.t_creation; };
+    MPI_Datatype mpiEventType = mpiInfo.MPI_Type_ObservationTime;
+    this->observation_times.sort(eventAfter);
+    sendAndCollectEvents<ObservationTime>(
+            mpiInfo, this->observation_times, this->observation_times_all, eventBefore, mpiEventType);
 }
 
 template<typename P, typename L>
@@ -228,9 +228,9 @@ void MpiKestenSim<P, L>::mpiSaveResults()
     initial_active_file << active_initial_all;
     initial_active_file.close();
 
-    std::ofstream survival_times_kesten_file("./survival_times.txt");
-    survival_times_kesten_file << survival_times_all;
-    survival_times_kesten_file.close();
+    std::ofstream observation_times_kesten_file("./observation_times.txt");
+    observation_times_kesten_file << observation_times_all;
+    observation_times_kesten_file.close();
 }
 
 std::ostream& operator<<(std::ostream& ostream, const MpiInfo& info)

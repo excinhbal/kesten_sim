@@ -6,7 +6,7 @@
 
 MPI_Datatype register_structural_events_type();
 MPI_Datatype register_synapse_type();
-MPI_Datatype register_survival_time_type();
+MPI_Datatype register_observation_time_type();
 
 struct MpiInfo
 {
@@ -16,7 +16,7 @@ struct MpiInfo
     int i_end = -1;
     MPI_Datatype MPI_Type_StructuralPlasticityEvent = MPI_DATATYPE_NULL;
     MPI_Datatype MPI_Type_Synapse = MPI_DATATYPE_NULL;
-    MPI_Datatype MPI_Type_SurvivalTime = MPI_DATATYPE_NULL;
+    MPI_Datatype MPI_Type_ObservationTime = MPI_DATATYPE_NULL;
 };
 
 template<typename P, typename L>
@@ -32,7 +32,7 @@ public:
     void mpiSendAndCollectWeights();
     void mpiSendAndCollectStrctEvents();
     void mpiSendAndCollectInitialActive();
-    void mpiSendAndCollectSurvivalTimes();
+    void mpiSendAndCollectObservationTimes();
     void mpiSaveResults();
 
 protected:
@@ -42,7 +42,7 @@ private:
     const MpiInfo mpiInfo;
     std::vector<double> w_all;
     std::vector<StructuralPlasticityEvent> structual_events_all;
-    std::vector<SurvivalTime> survival_times_all;
+    std::vector<ObservationTime> observation_times_all;
     std::vector<Synapse> active_initial_all;
 };
 
