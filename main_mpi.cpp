@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
         while (sim.hasNextStep()) {
             sim.doStep();
         }
+        sim.afterLastStep();
         sim.mpiSendAndCollectWeights();
         sim.mpiSendAndCollectStrctEvents();
         sim.mpiSendAndCollectInitialActive();

@@ -102,6 +102,12 @@ KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
     for (unsigned short j = 0; j < w.size(); ++j) {
         for (const unsigned short i : is[j]) {
             active_initial.emplace_back(i, j);
+            // so that we can observe A and P types
+            initial_structual_events.emplace_front(
+                    StructuralPlasticityEventType::Create,
+                    /* t= */ 0, i, nP.neuronOffset+j
+            );
+            creation_times[j][i] = &initial_structual_events.front();
         }
     }
     std::cout << std::endl;
@@ -155,11 +161,14 @@ void KestenSimulation<P, L>::doStep()
                         );
                         auto creation_event = creation_times[j][i];
                         if (creation_event) {
-                            auto surv_time = survival_times.emplace_front(
+                            survival_times.emplace_front(
                                     (std::uint32_t)creation_event->t, (std::uint32_t)t-creation_event->t
                             );
                             // std::cout << surv_time << std::endl;
                             creation_times[j][i] = nullptr;
+                        } else {
+                            std::cout << "no creation event for " << i << " " << j << " at " << t << std::endl;
+                            exit(10);
                         }
                         // erase operation automatically makes index_i point at next element
                     } else {
@@ -211,6 +220,23 @@ void KestenSimulation<P, L>::doStep()
     }
 
     step++;
+}
+
+template<typename P, typename L>
+void KestenSimulation<P, L>::afterLastStep()
+{
+    // observe A and C types
+    const int t = (int) ((double) step) / ((double) steps) * p.T / second;
+    for (unsigned short j = 0; j < w.size(); ++j) {
+        for (const unsigned short i : is[j]) {
+            auto creation_event = creation_times[j][i];
+            if (creation_event) {
+                survival_times.emplace_front(
+                    (std::uint32_t)creation_event->t, (std::uint32_t)t-creation_event->t
+                );
+            }
+        }
+    }
 }
 
 template<typename P, typename L>

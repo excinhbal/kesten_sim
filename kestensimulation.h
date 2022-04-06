@@ -181,6 +181,7 @@ public:
 
     [[nodiscard]] bool hasNextStep() const;
     void doStep();
+    void afterLastStep();
 
     void saveResults();
 
@@ -219,6 +220,7 @@ protected:
     std::vector<std::vector<double>> w;
     std::vector<std::vector<unsigned short>> is;
     std::vector<std::vector<StructuralPlasticityEvent*>> creation_times;
+    std::forward_list<StructuralPlasticityEvent> initial_structual_events;
     std::forward_list<StructuralPlasticityEvent> structual_events;
     std::forward_list<SurvivalTime> survival_times;
     std::vector<Synapse> active_initial;

@@ -9,6 +9,7 @@ int main(int argc, char** argv)
     while (sim.hasNextStep()) {
         sim.doStep();
     }
+    sim.afterLastStep();
     sim.saveResults();
 
     return 0;

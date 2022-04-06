@@ -16,6 +16,7 @@ TEST_CASE("End-to-end seed 193945") {
     while (sim.hasNextStep()) {
         sim.doStep();
     }
+    sim.afterLastStep();
     sim.saveResults();
 
     auto weights = readfile("./weights.txt");
