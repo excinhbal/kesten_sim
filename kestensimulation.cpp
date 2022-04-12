@@ -83,6 +83,21 @@ KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
         , n_should_be_active(std::ceil(p.p_conn_fraction*n_available))
         , stepper(p)
 {
+    bool use_init_distribution = p.init_distribution_bins.size() > 0;
+    if (use_init_distribution && p.init_distribution_bins.size() != p.init_distribution_density.size()+1) {
+        std::cerr << "init_distribution_bins must have one more entry that density" << std::endl;
+        exit(1);
+    }
+    const std::size_t center_count = use_init_distribution ? p.init_distribution_bins.size() - 1 : 0;
+    std::vector<double> init_distribution_bins_center(center_count);
+
+    if (use_init_distribution) {
+        std::transform(p.init_distribution_bins.cbegin(), --p.init_distribution_bins.cend(),
+                       ++p.init_distribution_bins.cbegin(),
+                       init_distribution_bins_center.begin(), [](double a, double b) { return (a + b) / 2; });
+    }
+    std::discrete_distribution<> bin_center_dist(p.init_distribution_density.cbegin(), p.init_distribution_density.cend());
+
     int n_active_initially = 0;
     // initialize weights
     for (int j = 0; j < w.size(); ++j) { // TODO use fancy iterator
@@ -92,7 +107,10 @@ KestenSimulation<P, L>::KestenSimulation(const P& p_, NodeParameters nP_)
         is[j].resize(0);
         for (int i = 0; i < n_potentiallyIncoming; i++) {
             if (unif(gen) <= p.p_conn_fraction) {
-                w[j].push_back(p.w_min * 1.01); // add a bit to not prune synapses in first pruning event
+                double w_init = p.w_min * 1.01; // add a bit to not prune synapses in first pruning event
+                if (use_init_distribution)
+                    w_init = init_distribution_bins_center[bin_center_dist(gen)];
+                w[j].push_back(w_init);
                 is[j].push_back(i);
             }
         }

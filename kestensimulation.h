@@ -21,7 +21,8 @@ struct Parameters
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Parameters,
         eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct, do_norm, do_clamp_after_kesten,
-        syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta, seed)
+        syn_kesten_mu_epsilon_1, syn_kesten_mu_eta, syn_kesten_var_epsilon_1, syn_kesten_var_eta, seed,
+        init_distribution_bins, init_distribution_density)
     double eta_targ = 12.5;
     double w_min = 0.0363;
     double w_max = 0.3244;
@@ -40,6 +41,9 @@ struct Parameters
     double syn_kesten_var_epsilon_1 = 0.0011/second;
     double syn_kesten_var_eta = 0.000028/second;
 
+    std::vector<double> init_distribution_bins;
+    std::vector<double> init_distribution_density;
+
     long unsigned int seed = 193945;
 };
 
@@ -50,7 +54,8 @@ struct QuadParameters
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(QuadParameters,
                                                 eta_targ, w_min, w_max, p_conn_fraction, p_inact, T, dt, dt_norm, dt_strct, do_norm, do_clamp_after_kesten,
-                                                mu_alpha, var_alpha, mu_beta_1, var_beta_1, mu_gamma, var_gamma, seed)
+                                                mu_alpha, var_alpha, mu_beta_1, var_beta_1, mu_gamma, var_gamma, seed,
+                                                init_distribution_bins, init_distribution_density)
     double eta_targ = 12.5;
     double w_min = 0.0363;
     double w_max = 0.3244;
@@ -70,6 +75,9 @@ struct QuadParameters
     double var_beta_1 = 0.0/second;
     double mu_gamma = 0.0/second;
     double var_gamma = 0.0/second;
+
+    std::vector<double> init_distribution_bins;
+    std::vector<double> init_distribution_density;
 
     long unsigned int seed = 193945;
 };
